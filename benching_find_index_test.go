@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func BenchmarkPushdowns(b *testing.B) {
+func BenchmarkPushdownsIndex(b *testing.B) {
 	ctx := context.TODO()
 	opts := options.Client().ApplyURI("mongodb://testuser:12345@127.0.0.1/ferretdb?authMechanism=PLAIN")
 
@@ -32,7 +32,7 @@ func BenchmarkPushdowns(b *testing.B) {
 
 	b.Run("Pushdown string =", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			cur, err := collection.Find(ctx, bson.D{{"xstr", "117"}})
+			cur, err := collection.Find(ctx, bson.D{{"ystr", "117"}})
 			require.NoError(b, err)
 
 			var res []bson.D
@@ -45,7 +45,7 @@ func BenchmarkPushdowns(b *testing.B) {
 
 	b.Run("Pushdown int =", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			cur, err := collection.Find(ctx, bson.D{{"xint", 117}})
+			cur, err := collection.Find(ctx, bson.D{{"yint", 117}})
 			require.NoError(b, err)
 
 			var res []bson.D
@@ -58,7 +58,7 @@ func BenchmarkPushdowns(b *testing.B) {
 
 	b.Run("Pushdown string eq", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			cur, err := collection.Find(ctx, bson.D{{"zstr", bson.M{"$eq": "117"}}})
+			cur, err := collection.Find(ctx, bson.D{{"ystr", bson.M{"$eq": "117"}}})
 			require.NoError(b, err)
 
 			var res []bson.D
@@ -71,7 +71,7 @@ func BenchmarkPushdowns(b *testing.B) {
 
 	b.Run("Pushdown int eq", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			cur, err := collection.Find(ctx, bson.D{{"zint", bson.M{"$eq": 117}}})
+			cur, err := collection.Find(ctx, bson.D{{"yint", bson.M{"$eq": 117}}})
 			require.NoError(b, err)
 
 			var res []bson.D
@@ -84,7 +84,7 @@ func BenchmarkPushdowns(b *testing.B) {
 
 	b.Run("NoPushdown int gt", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			cur, err := collection.Find(ctx, bson.D{{"zint", bson.M{"$gt": 198}}})
+			cur, err := collection.Find(ctx, bson.D{{"yint", bson.M{"$gt": 198}}})
 			require.NoError(b, err)
 
 			var res []bson.D

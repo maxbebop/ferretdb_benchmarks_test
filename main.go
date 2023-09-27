@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -40,7 +41,7 @@ func main() {
 	fmt.Println(dbNames)
 
 	collection := client.Database("ferretdb").Collection("Benchmarks")
-	/*for i := 0; i < 1000; i++ {
+	/*for i := 1000; i < 10000; i++ {
 
 		//_, err := AddOneItem(collection, generateRandomPoint(i))
 		point := generateRandomPoint(i)
@@ -52,22 +53,42 @@ func main() {
 		}
 	}*/
 
-	for i := 0; i < 10; i++ {
-		cur, err := collection.Find(ctx, bson.D{{"xstr", "117"}})
-		//require.NoError(b, err)
-
-		var res []bson.D
-		err = cur.All(ctx, &res)
-		//require.NoError(b, err)
-
-		//require.NotEmpty(b, res)
-		if err != nil {
-			fmt.Printf("err: %v\n", err)
-		} else {
-			fmt.Printf("res: %+v\n", res)
-		}
+	pipeline := `[
+		{"$match": { "xint": { $eq: 150 } }},
+		{"$group": { "_id": "$yint", "count": { "$sum": 1 } }},
+		{"$project": { "brand": "$_id", "_id": 0, "count": 1 }}
+	]`
+	optsAggr := options.Aggregate()
+	optsAggr.SetAllowDiskUse(true)
+	optsAggr.SetBatchSize(5)
+	cur, err := collection.Aggregate(ctx, bson.D{{"xstr", "117"}})
+	if cur, err = collection.Aggregate(ctx, MongoPipeline(pipeline), optsAggr); err != nil {
+		fmt.Println("Error: ", err)
+		return
 	}
 
+	defer cur.Close(ctx)
+	for cur.Next(ctx) {
+		fmt.Println("cur: ", cur)
+	}
+
+	/*
+		for i := 0; i < 10; i++ {
+			cur, err := collection.Find(ctx, bson.D{{"xstr", "117"}})
+			//require.NoError(b, err)
+
+			var res []bson.D
+			err = cur.All(ctx, &res)
+			//require.NoError(b, err)
+
+			//require.NotEmpty(b, res)
+			if err != nil {
+				fmt.Printf("err: %v\n", err)
+			} else {
+				fmt.Printf("res: %+v\n", res)
+			}
+		}
+	*/
 	/*
 			options := options.Find()
 		filter := bson.M{}
@@ -180,4 +201,17 @@ func generateRandomPoint(index int) Point {
 		ZStr: strconv.Itoa(z),
 		ZInt: z,
 	}
+}
+
+func MongoPipeline(str string) mongo.Pipeline {
+	var pipeline = []bson.D{}
+	str = strings.TrimSpace(str)
+	if strings.Index(str, "[") != 0 {
+		var doc bson.D
+		bson.UnmarshalExtJSON([]byte(str), false, &doc)
+		pipeline = append(pipeline, doc)
+	} else {
+		bson.UnmarshalExtJSON([]byte(str), false, &pipeline)
+	}
+	return pipeline
 }
